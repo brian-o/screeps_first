@@ -1,7 +1,10 @@
-import { Builder } from "roles/Builder";
 import { ErrorMapper } from "utils/ErrorMapper";
-import { Harvester } from "roles/Harvester";
-import { Upgrader } from "roles/Upgrader";
+import { RoleOrchestrator } from "RoleOrchestrator";
+import { SpawnController } from "spawning/SpawnController";
+
+const spawn = new SpawnController();
+
+// WORK sucks out 2 of the resource
 
 // When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
@@ -15,73 +18,6 @@ export const loop = ErrorMapper.wrapLoop(() => {
     }
   }
 
-  // spawn time bby
-  const harvesters = _.filter(Game.creeps, creep => creep.memory.role === "harvester");
-  console.log(`Upgraders: ${harvesters.length}`);
-
-  // should probably have a check on if there is enough energy xD
-  if (harvesters.length < 2) {
-    const newName = `Harvester ${Game.time}`;
-    console.log("Spawning new harvester: " + newName);
-    Game.spawns.Spawn1.spawnCreep([WORK, CARRY, MOVE], newName, {
-      memory: {
-        role: "harvester",
-        room: "",
-        working: true
-      }
-    });
-  }
-
-  const upgraders = _.filter(Game.creeps, creep => creep.memory.role === "upgrader");
-  console.log(`Upgraders: ${upgraders.length}`);
-
-  if (upgraders.length < 1) {
-    const newName = `Upgrader${Game.time}`;
-    console.log(`Spawning new upgrader: ${newName}`);
-    Game.spawns.Spawn1.spawnCreep([WORK, CARRY, MOVE], newName, {
-      memory: {
-        role: "upgrader",
-        room: "",
-        working: true
-      }
-    });
-  }
-
-  const builders = _.filter(Game.creeps, creep => creep.memory.role === "builder");
-  console.log(`Builders: ${builders.length}`);
-
-  if (builders.length < 1) {
-    const newName = `Builder${Game.time}`;
-    console.log(`Spawning new builder: ${newName}`);
-    Game.spawns.Spawn1.spawnCreep([WORK, CARRY, MOVE], newName, {
-      memory: {
-        role: "builder",
-        room: "",
-        working: true
-      }
-    });
-  }
-
-  if (Game.spawns.Spawn1.spawning) {
-    const spawningCreep = Game.creeps[Game.spawns.Spawn1.spawning.name];
-    Game.spawns.Spawn1.room.visual.text(
-      "🛠️" + spawningCreep.memory.role,
-      Game.spawns.Spawn1.pos.x + 1,
-      Game.spawns.Spawn1.pos.y,
-      { align: "left", opacity: 0.8 }
-    );
-  }
-
-  for (const name in Game.creeps) {
-    const creep = Game.creeps[name];
-    if (creep.memory.role === "harvester") {
-      Harvester.run(creep);
-    }
-    if (creep.memory.role === "upgrader") {
-      Upgrader.run(creep);
-    }
-    if (creep.memory.role === "builder") {
-      Builder.run(creep);
-    }
-  }
+  spawn.spawnIfNeeded(Game.creeps, Game.spawns.Spawn1.room.energyAvailable);
+  RoleOrchestrator.tick();
 });
